@@ -1,3 +1,9 @@
 这是一个简易的将MIPS实验的CPU汇编代码（哈工大课程，共十条指令）转换为机器二进制码的代码。
 使用的时候，首先修改initPara函数，将自己的CPU的指令编码写入里面，opCode对应OP编码，regs则是寄存器的名称定义，instructionType是一条指令对应的模式。
 指令的模式是用list定义，里面的项目也为list，其中每个元素的第一项为解析操作码和寄存器以及立即数的函数，后一个则是移位的数量，将代码移位到正确的位置上。
+main.py是可以在python3上使用的，main_py2.py则是可以在python2上使用。
+使用方法是：
+python main.py -s 你的源代码 -t 机器码的目标地址
+例如对于示例的代码：
+python main.py -s exampleCode.txt
+其中-t为可选参数，默认存储到default.mem中，可以作为实验中readmemb的读取源文件。

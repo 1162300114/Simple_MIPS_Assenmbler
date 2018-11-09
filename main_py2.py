@@ -120,7 +120,7 @@ def getMachineCode(code):
 	return ret
 
 def writeToTarget(machineCodes,target):
-	f=open(target,'w',newline='')
+	f=open(target,'wb')
 	f.writelines(machineCodes)
 
 
