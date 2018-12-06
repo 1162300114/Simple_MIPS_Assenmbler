@@ -5,7 +5,7 @@ import re
 import sys
 
 
-opCode={'JMP':0,'ADD':1,'SUB':2,'AND':3,'OR':4,'XOR':5,'SLT':6,'SW':9,'LW':17,'BEQ':33}
+opCode={'JMP':0,'ADD':1,'SUB':2,'AND':3,'OR':4,'XOR':5,'SLT':6,'SAL':7,'SW':9,'LW':17,'MOV':25,'BEQ':33}
 regs={}
 instructionType={}
 
@@ -16,12 +16,12 @@ def initPara():
 	global instructionType
 	for i in range(32):
 		regs['R'+str(i)]=i
-	typeI=[[getOP,26],[getReg,21],[getReg,16],[getReg,11],[getImm,0]]
-	typeR=[[getOP,26],[getReg,21],[getReg,16],[getImm,0]]
-	typeJ1=[[getOP,26],[getReg,21],[getReg,16],[getImm,0]]
-	typeJ2=[[getOP,26],[getImm,0]]
-	I=['ADD','SUB','AND','OR','XOR','SLT']
-	R=['SW','LW']
+	typeI=[[getOP,6],[getReg,5],[getReg,5],[getReg,5],[getImm,11]]
+	typeR=[[getOP,6],[getReg,5],[getReg,5],[getImm,16]]
+	typeJ1=[[getOP,6],[getReg,5],[getReg,5],[getImm,16]]
+	typeJ2=[[getOP,6],[getImm,26]]
+	I=['ADD','SUB','AND','OR','XOR','SLT','SAL']
+	R=['SW','LW','MOV']
 	J1=['BEQ']
 	J2=['JMP']
 	for op in I:
@@ -39,24 +39,25 @@ def initPara():
 	#instructionType[J2]=typeJ2
 	return 0
 
-def getOP(op):
+def getOP(op,length,linenum):
 	global opCode
 	ret=opCode[op]
 	if ret is None:
-		print('Unexpect op code in your file')
+		print('Unexpect op code in your file in line:{:d}'.format(linenum))
 		sys.exit(1)
-	return ret
+	return mybin(ret,length)
 
-def getReg(reg):
+def getReg(reg,length,linenum):
 	global regs
 	ret=regs[reg]
 	if ret is None:
-		print('Unexpect Reg name in your file')
+		print('Unexpect Reg name in your file in line:{:d}'.format(linenum))
 		sys.exit(1)
-	return ret
+	return mybin(ret,length)
 
-def getImm(Imm):
-	return int(Imm)
+def getImm(Imm,length,linenum):
+	ret=int(Imm)
+	return mybin(ret,length)
 
 def getUserPara():
 	try:
@@ -85,44 +86,54 @@ def getUserPara():
 def getAssemblyCode(source):
 	f=open(source,'r')
 	retTmp=[]
+	linenum=0
 	for line in f:
+		linenum+=1
 		tmp=line.split('#')
 		if len(tmp):
-			retTmp.append(tmp[0])
-	pattern='[^a-zA-Z0-9]'
+			retTmp.append([tmp[0],linenum])
+	pattern='[^a-zA-Z0-9-]'
 	ret=[]
 	for code in retTmp:
-		tmp=re.split(pattern,code)
+		tmp=re.split(pattern,code[0])
 		while '' in tmp:
 			tmp.remove('')
 		if len(tmp):
-			ret.append(tmp)
+			ret.append([tmp,code[1]])
 	return ret
 
-def getMachineCode(code):
+def getMachineCode(code,linenum):
 	global opCode
 	global regs
 	global instructionType
-	ret=0
+	ret=''
 	iType=None
 	for t in instructionType:
 		if code[0] in t:
 			iType=instructionType[t]
 			break
 	if iType is None:
-		print('Unexpect code type in your file')
+		print('Unexpect code type in your file in line:{:d}'.format(linenum))
 		sys.exit(1)
 	if len(code)!=len(iType):
-		print('code length and type length should be equal')
+		print('code length and type length should be equal in line:{:d}'.format(linenum))
 		sys.exit(1)
 	for i in range(len(code)):
-		ret+=(iType[i][0](code[i])<<iType[i][1])
+		ret+=(iType[i][0](code[i],iType[i][1],linenum))
 	return ret
 
 def writeToTarget(machineCodes,target):
 	f=open(target,'w',newline='')
 	f.writelines(machineCodes)
 
+def mybin(x,length):
+	ret=[]
+	for i in range(length-1,-1,-1):
+		if (x&(1<<i)):
+			ret.append('1')
+		else:
+			ret.append('0')
+	return ''.join(ret)
 
 def main():
 	userParas=getUserPara()
@@ -135,8 +146,8 @@ def main():
 	print(assemblyCode)
 	machineCodes=[]
 	for code in assemblyCode:
-		machineCode=getMachineCode(code)
-		machineCodes.append(bin(machineCode)[2:]+'\r\n')
+		machineCode=getMachineCode(code[0],code[1])
+		machineCodes.append(machineCode+'\r\n')
 	print(machineCodes)
 	writeToTarget(machineCodes,userParas['target'])
 
